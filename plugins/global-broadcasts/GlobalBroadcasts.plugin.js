@@ -1,5 +1,3 @@
-const { itemValue } = require("../interface/ValueWarning");
-
 const LEVEL_99 = "GlobalBroadcasts:level99Message";
 const COLLECTION_LOG = "GlobalBroadcasts:collectionLogMessage";
 const PET = "GlobalBroadcasts:petMessage";
@@ -67,6 +65,17 @@ function itemName(itemId) {
   return pluginApi.core.ItemDefinition.forId(itemId).getName();
 }
 
+function itemValue(itemId, amount) {
+  if (itemId <= 0) return 0;
+  const { ItemDefinition } = pluginApi.core;
+  const definition = ItemDefinition.forId(itemId);
+  const baseId = definition?.unNote?.() ?? itemId;
+  const base = baseId === itemId ? definition : ItemDefinition.forId(baseId);
+  if (base?.isTradeable?.() !== true) return 0;
+  const guidePrice = Math.max(0, Math.floor(Number(base.getGrandExchangeValue?.()) || 0));
+  return guidePrice * amount;
+}
+
 function collectionLog({ player, itemId }) {
   const template = pluginApi.getPluginConfig(COLLECTION_LOG) ?? config[COLLECTION_LOG].default;
   broadcast(template, player, { item: itemName(itemId) });
@@ -89,7 +98,7 @@ function receivedDrops({ player, drops }) {
   const template = pluginApi.getPluginConfig(VALUABLE_DROP) ?? config[VALUABLE_DROP].default;
   for (const { itemId, amount } of drops ?? []) {
     if (!Number.isInteger(itemId) || !Number.isSafeInteger(amount) || amount <= 0) continue;
-    const value = itemValue(pluginApi.core, itemId, amount);
+    const value = itemValue(itemId, amount);
     if (!(value > minimum)) continue;
     broadcast(template, player, {
       item: itemName(itemId),
