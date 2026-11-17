@@ -1,0 +1,55 @@
+const fs = require("node:fs");
+const { parse } = require("acorn");
+
+const program = parse(fs.readFileSync(process.argv[2], "utf8"), { ecmaVersion: "latest", allowHashBang: true });
+const constants = new Map();
+let config;
+
+for (const statement of program.body) {
+  if (statement.type === "VariableDeclaration" && statement.kind === "const") {
+    for (const { id, init } of statement.declarations) {
+      if (id.type === "Identifier") constants.set(id.name, init);
+    }
+  }
+  const assignment = statement.type === "ExpressionStatement" && statement.expression;
+  const target = assignment?.left;
+  if (assignment?.type !== "AssignmentExpression" || assignment.operator !== "=" ||
+      target?.type !== "MemberExpression" || target.computed || target.object.name !== "module" ||
+      target.property.name !== "exports" || assignment.right.type !== "ObjectExpression") continue;
+  config = assignment.right.properties.findLast(property =>
+    property.type === "Property" && !property.computed && (property.key.name ?? property.key.value) === "config")?.value;
+}
+
+// Read static declarations without importing or executing a submitted plugin.
+function json(node, resolving = new Set()) {
+  if (node?.type === "Literal" && !node.regex && !node.bigint && (typeof node.value !== "number" || Number.isFinite(node.value))) {
+    return node.value;
+  }
+  if (node?.type === "Identifier" && constants.has(node.name) && !resolving.has(node.name)) {
+    return json(constants.get(node.name), new Set([...resolving, node.name]));
+  }
+  if (node?.type === "UnaryExpression" && node.operator === "-") {
+    const value = json(node.argument, resolving);
+    if (typeof value === "number") return -value;
+  }
+  if (node?.type === "ArrayExpression") return node.elements.map(element => json(element, resolving));
+  if (node?.type === "ObjectExpression") return Object.fromEntries(node.properties.map(property => {
+    if (property.type !== "Property" || property.kind !== "init" || property.method) throw new Error("Expected a plain property");
+    const key = !property.computed && property.key.type === "Identifier" ? property.key.name : json(property.key, resolving);
+    if (typeof key !== "string" && typeof key !== "number") throw new Error("Expected a string or number key");
+    return [key, json(property.value, resolving)];
+  }));
+  throw new Error("Expected a JSON literal or a top-level const");
+}
+
+let schema;
+if (config) {
+  try {
+    schema = json(config);
+    if (!schema || typeof schema !== "object" || Array.isArray(schema)) throw new Error("Expected a config object");
+  } catch (error) {
+    console.warn(`Offline config unavailable for ${process.argv[2]}: ${error.message}`);
+    schema = undefined;
+  }
+}
+process.stdout.write(JSON.stringify(schema ?? null));

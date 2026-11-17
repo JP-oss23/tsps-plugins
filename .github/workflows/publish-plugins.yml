@@ -3,10 +3,10 @@ name: Publish plugin releases
 on:
   pull_request:
     branches: [main]
-    paths: [catalogue.json, 'plugins/**', scripts/package-plugin.py, .github/workflows/publish-plugins.yml]
+    paths: [catalogue.json, 'plugins/**', 'scripts/**', 'package*.json', .github/workflows/publish-plugins.yml]
   push:
     branches: [main]
-    paths: [catalogue.json, 'plugins/**', scripts/package-plugin.py, .github/workflows/publish-plugins.yml]
+    paths: [catalogue.json, 'plugins/**', 'scripts/**', 'package*.json', .github/workflows/publish-plugins.yml]
   workflow_dispatch:
 
 permissions:
@@ -19,6 +19,10 @@ jobs:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci
       - name: Validate and package catalogue entries
         run: python3 scripts/package-plugin.py --catalogue
       - uses: actions/upload-artifact@v4

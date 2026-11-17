@@ -1,6 +1,7 @@
 import argparse
 import json
 import re
+import subprocess
 from pathlib import Path
 from zipfile import ZIP_DEFLATED, ZipFile, ZipInfo
 
@@ -28,7 +29,16 @@ def package_plugin(plugin_id, expected_version=None):
 
     output = ROOT / "dist" / f'{plugin_id}-{manifest["version"]}.zip'
     source_path = directory / f'{manifest["name"]}.plugin.js'
-    files = {file.name: file.read_bytes() for file in (manifest_path, source_path)}
+    manifest.pop("config", None)
+    config = json.loads(subprocess.check_output(
+        ["node", ROOT / "scripts" / "plugin-config.cjs", source_path]
+    ))
+    if config:
+        manifest["config"] = config
+    files = {
+        manifest_path.name: json.dumps(manifest, ensure_ascii=False, indent=4).encode("utf-8") + b"\n",
+        source_path.name: source_path.read_bytes(),
+    }
     if any(not data or len(data) > 1024 * 1024 for data in files.values()):
         raise ValueError("Each plugin file must be between 1 byte and 1 MiB")
     output.parent.mkdir(exist_ok=True)

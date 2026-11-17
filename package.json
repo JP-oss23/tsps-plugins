@@ -1,0 +1,7 @@
+{
+  "name": "tsps-plugin-packaging",
+  "private": true,
+  "devDependencies": {
+    "acorn": "8.18.0"
+  }
+}

@@ -18,5 +18,11 @@ Use a new version for changes to a published package. The workflow skips release
 that already have their ZIP. Run the workflow manually on `main` to retry a failed
 publish.
 
-For a local ZIP, run `python3 scripts/package-plugin.py <id>`. To check the whole
+ZIPs include the plugin's static `config` declarations in `plugin.json` so the panel
+can show settings before the plugin loads. Use an object in `module.exports.config`
+or a reference to a top-level `const`. Values can be JSON literals or top-level
+constants. Computed declarations that need to run JavaScript remain available
+after startup.
+
+For a local ZIP, run `npm ci` with Node.js 22, then `python3 scripts/package-plugin.py <id>`. To check the whole
 catalogue locally, run `python3 scripts/package-plugin.py --catalogue`.
