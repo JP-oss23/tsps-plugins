@@ -1,6 +1,6 @@
 diff --git a/client/game/plugins/tspsmapwalk/MapWalkPlugin.ts b/client/game/plugins/tspsmapwalk/MapWalkPlugin.ts
 new file mode 100644
-index 000000000..57f1e5024
+index 000000000..da7f8b53d
 --- /dev/null
 +++ b/client/game/plugins/tspsmapwalk/MapWalkPlugin.ts
 @@ -0,0 +1,72 @@
@@ -41,9 +41,9 @@ index 000000000..57f1e5024
 +}
 +
 +/**
-+ * Move here, the menu half (CUSTOM.md): right-clicking anywhere on the world map offers Move here, and picking it
-+ * sends that tile to the server half (server/plugins/0-tsps-mapwalk), which walks the player there from wherever
-+ * they are -- however far, through doors, up and down stairs and ladders, over shortcuts and into dungeons.
++ * When enabled, this plugin adds Move here to the world map's right-click menu and sends the selected tile to
++ * the server's MapWalk plugin. It is off by default so clients can connect to servers without MapWalk and keep
++ * the standard world map menu.
 + *
 + * The entry goes in through tsps's own world-map menu seam (`ClientPlugin.worldMapMenuEntries`, the one its
 + * Shortest Path plugin uses), so it reads as one of the map's own options: under an icon's own options, above
@@ -53,9 +53,9 @@ index 000000000..57f1e5024
 +export class MapWalkPlugin extends Plugin {
 +    static descriptor: PluginDescriptor = {
 +        name: "World Map Walk",
-+        description: "Right-click anywhere on the world map and pick Move here; your character walks there, however far away it is.",
++        description: "Adds Move here to the world map. Enable only on servers with the MapWalk server plugin installed.",
 +        tags: ["world map", "map", "walk", "travel", "move", "pathfinding"],
-+        enabledByDefault: true,
++        enabledByDefault: false,
 +        configKey: "tspsmapwalk",
 +    };
 +
